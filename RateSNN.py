@@ -73,7 +73,6 @@ def finalW_update(s_y, s_pre, label, th_val, kernel):
 def innerW_update(s_post, s_pre, del_post_p, del_post_m, W_post, th_val, kernel):
     n_post = tf.to_float(s_post.get_shape()[-1])
     n_pre = tf.to_float(s_pre.get_shape()[-1])
-    th_val_b = th_val*n_post/n_pre
     pre_relu_p = tf.matmul(0.5*(del_post_p - del_post_m), tf.transpose(W_post))
     pre_relu_m = tf.matmul(0.5*(del_post_m - del_post_p), tf.transpose(W_post))
     del_p = apply_relu_grad_full(pre_relu_p, s_post)
@@ -81,10 +80,10 @@ def innerW_update(s_post, s_pre, del_post_p, del_post_m, W_post, th_val, kernel)
     v_p = tf.nn.depthwise_conv2d(del_p, kernel, [1,1,1,1], 'SAME')
     v_m = tf.nn.depthwise_conv2d(del_m, kernel, [1,1,1,1], 'SAME')
     th = tf.Variable(th_val*tf.ones_like(v_m[:,:,0,:]))
-    sdel_p = thresholding(v_p, th_val_b, th)
-    sdel_m = thresholding(v_m, th_val_b, th)
+    sdel_p = thresholding(v_p, th_val, th)
+    sdel_m = thresholding(v_m, th_val, th)
     s_pre_av = tf.reduce_mean(s_pre, axis=[1,2])
-    del_av = tf.reduce_mean(del_p - del_m, axis=[1,2])
+    del_av = tf.reduce_mean(sdel_p - sdel_m, axis=[1,2])
     dW = tf.matmul(tf.transpose(s_pre_av), del_av)
     return sdel_p, sdel_m, dW
 
